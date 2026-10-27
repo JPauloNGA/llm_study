@@ -194,6 +194,20 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 - **A diferença PT-BR vs EN se mantém:** Em todos os modelos, o prompt em inglês gerou menos tokens e foi mais rápido. O Gemma foi a exceção (tempo similar), provavelmente porque seu tokenizador é mais equilibrado entre idiomas.
 - **Insight extra:** O Qwen 1.5B é o modelo mais eficiente para a RX 580 (melhor velocidade com menor VRAM). O Llama 3.2 1B, apesar de ter menos parâmetros, é mais lento e usa mais VRAM que o Qwen 1.5B — provando que arquitetura e tokenizador importam mais que o número de parâmetros.
 
+### Experimento 12: Impacto da Quantização (Q4 vs Q8)
+
+**Objetivo:** Comparar o trade-off entre velocidade, VRAM e qualidade das quantizações Q4_K_M (4-bit) e Q8_0 (8-bit) do mesmo modelo (Qwen 2.5 1.5B).
+
+| Quantização | Velocidade (t/s) | VRAM (GB) | Tempo (s) | Observação |
+| :--- | :--- | :--- | :--- | :--- |
+| **Q4_K_M (4-bit)** | **38.79** | **1.09** | 1.29 | ~5.6% mais rápido, 36% menos VRAM |
+| **Q8_0 (8-bit)** | 36.74 | 1.70 | 1.36 | Resposta com alucinação ("computação em tempo real") |
+
+**Insights:**
+- O Q4 é **~5.6% mais rápido** e usa **36% menos VRAM** que o Q8. Para a RX 580 (8GB), isso é crucial: libera VRAM para carregar outros modelos simultaneamente (ex: roteador + especialista).
+- **Mais bits não significam melhor qualidade:** o Q8 alucinou ao definir HPC como "computação em tempo real", enquanto o Q4 acertou ("HPC - High Performance Computing"). Isso mostra que a quantização não é o único fator de qualidade; o treinamento e o alinhamento do modelo importam mais.
+- **Conclusão:** Para hardware limitado como a RX 580, o Q4 é a escolha ideal. O Q8 só compensa se a precisão for absolutamente crítica e houver VRAM sobrando (o que não é o caso).
+
 ## Como Executar
 
 ### Pré-requisitos
@@ -238,8 +252,8 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 
 ## Próximos Passos (Roadmap)
 
-- [ ] Testar outros modelos (Llama 3.2 1B, Gemma 2 2B)
-- [ ] Comparar diferentes níveis de quantização (Q4, Q5, Q8)
+- [✓] Testar outros modelos (Llama 3.2 1B, Gemma 2 2B)
+- [✓] Comparar diferentes níveis de quantização (Q4, Q8)
 - [ ] Medir uso real de VRAM com ferramentas do sistema
 - [ ] Adicionar teste de qualidade (perplexidade) para validar se a quantização degrada a resposta
 
