@@ -68,6 +68,21 @@ Modelos como o Qwen são treinados majoritariamente em inglês e chinês. A toke
 
 **Ganho:** Aproximadamente **6x** de speedup apenas ao ativar a GPU via Vulkan.
 
+### Experimento 3: Comparação de Modelos (Qwen 1.5B, Qwen 3B, Llama 3.2 1B)
+
+Todos os testes foram executados com warm-up (modelo já carregado na VRAM) para medir apenas o tempo de geração.
+
+| Modelo | Parâmetros | Velocidade PT-BR (t/s) | Velocidade EN (t/s) | Tokens Gerados PT-BR | Tokens Gerados EN |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Qwen 2.5 1.5B | 1.5B | **39.46** | **39.74** | 50 | 32 |
+| Qwen 2.5 3B | 3B | 29.28 | 29.45 | 29 | 24 |
+| Llama 3.2 1B | 1B | 22.44 | 22.60 | 50 | 46 |
+
+**Insights:**
+- O **Qwen 2.5 1.5B** apresentou o melhor equilíbrio entre velocidade e qualidade, sendo ~75% mais rápido que o Llama 3.2 1B, apesar de ter mais parâmetros.
+- O **tamanho do modelo não é o único fator de velocidade**: arquitetura e otimização do backend influenciam significativamente.
+- A velocidade de geração (tokens/s) é **praticamente idêntica entre PT-BR e EN** para o mesmo modelo. A diferença de custo entre idiomas está na **quantidade de tokens gerados**, não na velocidade.
+
 ## Como Executar
 
 ### Pré-requisitos

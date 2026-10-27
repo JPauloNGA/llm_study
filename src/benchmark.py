@@ -1,29 +1,45 @@
 import requests
-import json
 import time
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODELO = "qwen2.5:1.5b"
+
+MODELOS = ["qwen2.5:1.5b", "llama3.2:1b", "qwen2.5:3b"]
 
 PROMPT_PT = "Explique em uma frase o que é computação de alta performance."
 PROMPT_EN = "Explain in one sentence what high-performance computing is."
 
-def rodar_teste(prompt, idioma):
-    print(f"\n--- Testando: {idioma} ---")
+def warm_up(modelo):
+    """Faz uma requisição rápida só para carregar o modelo na VRAM."""
+    print(f"  [Warm-up] Carregando {modelo} na VRAM...")
+    payload = {
+        "model": modelo,
+        "prompt": "OK",
+        "stream": False,
+        "options": {"num_predict": 1}
+    }
+    try:
+        requests.post(OLLAMA_URL, json=payload, timeout=120)
+    except Exception as e:
+        print(f"  Erro no warm-up: {e}")
+
+def rodar_teste(modelo, prompt, idioma):
+    print(f"\n--- Testando: {modelo} | {idioma} ---")
     
     payload = {
-        "model": MODELO,
+        "model": modelo,
         "prompt": prompt,
         "stream": False,
-        "options": {"num_predict": 50} # Limite de tokens gerados
+        "options": {"num_predict": 50}
     }
     
-    start = time.time()
-    response = requests.post(OLLAMA_URL, json=payload)
-    end = time.time()
+    try:
+        response = requests.post(OLLAMA_URL, json=payload, timeout=120)
+    except requests.exceptions.Timeout:
+        print("Timeout na requisição.")
+        return None
     
     if response.status_code != 200:
         print(f"Erro na requisição: {response.status_code}")
@@ -31,61 +47,67 @@ def rodar_teste(prompt, idioma):
     
     data = response.json()
     
-    # O Ollama retorna métricas em nanosegundos
-    eval_count = data.get("eval_count", 0) # Tokens gerados
-    eval_duration_ns = data.get("eval_duration", 1) # Tempo de geração
-    prompt_eval_count = data.get("prompt_eval_count", 0) # Tokens do prompt
-    total_duration_ns = data.get("total_duration", 1)
+    eval_count = data.get("eval_count", 0)
+    eval_duration_ns = data.get("eval_duration", 1)
+    prompt_eval_count = data.get("prompt_eval_count", 0)
     
-    tps = eval_count / (eval_duration_ns / 1e9) # Tokens por segundo
-    tempo_total_s = total_duration_ns / 1e9
+    # Usa APENAS o tempo de geração (eval_duration), não o total
+    tempo_geracao_s = eval_duration_ns / 1e9
+    tps = eval_count / tempo_geracao_s if tempo_geracao_s > 0 else 0
     
-    print(f"Tokens do Prompt: {prompt_eval_count}")
-    print(f"Tokens Gerados: {eval_count}")
-    print(f"Tempo Total: {tempo_total_s:.2f}s")
-    print(f"Velocidade: {tps:.2f} tokens/segundo")
-    print(f"Resposta: {data['response'][:80]}...")
+    print(f"Tokens Prompt: {prompt_eval_count} | Tokens Gerados: {eval_count} | Tempo Geração: {tempo_geracao_s:.2f}s | Velocidade: {tps:.2f} t/s")
     
     return {
+        "Modelo": modelo,
         "Idioma": idioma,
         "Tokens Prompt": prompt_eval_count,
         "Tokens Gerados": eval_count,
-        "Tempo (s)": round(tempo_total_s, 2),
+        "Tempo Geração (s)": round(tempo_geracao_s, 2),
         "Velocidade (tokens/s)": round(tps, 2)
     }
 
 if __name__ == "__main__":
     resultados = []
     
-    res_pt = rodar_teste(PROMPT_PT, "PT-BR")
-    if res_pt: resultados.append(res_pt)
-    
-    res_en = rodar_teste(PROMPT_EN, "EN")
-    if res_en: resultados.append(res_en)
+    for modelo in MODELOS:
+        # Warm-up: carrega o modelo antes de medir
+        warm_up(modelo)
+        
+        res_pt = rodar_teste(modelo, PROMPT_PT, "PT-BR")
+        if res_pt: resultados.append(res_pt)
+        
+        res_en = rodar_teste(modelo, PROMPT_EN, "EN")
+        if res_en: resultados.append(res_en)
     
     if resultados:
         df = pd.DataFrame(resultados)
         print("\n--- Tabela Final ---")
         print(df.to_string(index=False))
         
-        # Gráfico Comparativo
-        fig, ax1 = plt.subplots(figsize=(8, 5))
+        # Gráfico de barras agrupadas
+        fig, ax = plt.subplots(figsize=(10, 5))
         
-        # Barras de Velocidade
-        ax1.bar(df['Idioma'], df['Velocidade (tokens/s)'], color=['green', 'blue'], alpha=0.7, width=0.4)
-        ax1.set_ylabel('Velocidade (tokens/s)', color='black')
-        ax1.set_title('Benchmark: Prompt PT-BR vs Inglês (Ollama + Vulkan / RX 580)')
+        modelos_unicos = df['Modelo'].unique()
+        x = range(len(modelos_unicos))
+        width = 0.35
         
-        # Linha de Tokens do Prompt (eixo secundário)
-        ax2 = ax1.twinx()
-        ax2.plot(df['Idioma'], df['Tokens Prompt'], color='red', marker='o', linewidth=2, label='Tokens do Prompt')
-        ax2.set_ylabel('Qtd. Tokens do Prompt', color='red')
-        ax2.tick_params(axis='y', labelcolor='red')
+        pt_vals = [df[(df['Modelo'] == m) & (df['Idioma'] == 'PT-BR')]['Velocidade (tokens/s)'].values[0] if not df[(df['Modelo'] == m) & (df['Idioma'] == 'PT-BR')].empty else 0 for m in modelos_unicos]
+        en_vals = [df[(df['Modelo'] == m) & (df['Idioma'] == 'EN')]['Velocidade (tokens/s)'].values[0] if not df[(df['Modelo'] == m) & (df['Idioma'] == 'EN')].empty else 0 for m in modelos_unicos]
         
-        fig.tight_layout()
+        ax.bar([i - width/2 for i in x], pt_vals, width, label='PT-BR', color='green', alpha=0.8)
+        ax.bar([i + width/2 for i in x], en_vals, width, label='EN', color='blue', alpha=0.8)
+        
+        ax.set_xlabel('Modelo')
+        ax.set_ylabel('Velocidade (tokens/s)')
+        ax.set_title('Comparação de Modelos: Velocidade PT-BR vs EN (RX 580 / Vulkan)')
+        ax.set_xticks(x)
+        ax.set_xticklabels(modelos_unicos)
+        ax.legend()
+        
+        plt.tight_layout()
         
         if not os.path.exists('../results'):
             os.makedirs('../results')
-        plt.savefig('../results/benchmark_idiomas.png')
-        print("\nGráfico salvo em: results/benchmark_idiomas.png")
+        plt.savefig('../results/benchmark_modelos.png')
+        print("\nGráfico salvo em: results/benchmark_modelos.png")
         plt.show()
