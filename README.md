@@ -74,6 +74,21 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 
 **Insight:** Mesmo modelos maiores (3B) podem cometer erros conceituais em domínios técnicos específicos. O system prompt define o tom, mas **não corrige alucinações**. Isso justifica a necessidade de **fine-tuning com QLoRA** usando dados corretos e específicos do domínio.
 
+### Experimento 7: Fine-Tuning com QLoRA (Jarvis LoRA)
+
+**Processo:**
+1. Treinamento do adaptador LoRA no Google Colab (GPU T4) com dataset de 5 exemplos de mecatrônica.
+2. Merge do adaptador no modelo base Qwen 2.5 1.5B (f16).
+3. Conversão para GGUF via `llama.cpp`.
+4. Importação no Ollama como `jarvis-lora`.
+
+**Desafios encontrados:**
+- Incompatibilidade do `bitsandbytes` com a RX 580 (resolvido usando Colab).
+- Conflito de `torchao` no Colab (resolvido removendo a biblioteca).
+- Tokenizador do Qwen não é compatível com o script padrão do `llama.cpp` (resolvido baixando o tokenizador original do Hugging Face).
+
+**Resultado:** Pipeline completo de fine-tuning validado, desde o treinamento até a inferência local.
+
 ## Como Executar
 
 ### Pré-requisitos
