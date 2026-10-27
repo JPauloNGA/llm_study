@@ -192,6 +192,7 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 - **Gemma 2B é o "meio-termo" ideal:** ~28.4 t/s com apenas 1.8 GB de VRAM, quase empatando com o Qwen 3B (~29.2 t/s) mas usando menos memória.
 - **Tokenizador do Gemma é muito mais eficiente em PT-BR:** Apenas **23 tokens** para o prompt em português, contra 43 do Qwen. Isso significa que o Gemma "entende" português com menos tokens, reduzindo o custo computacional em cenários multilíngues.
 - **A diferença PT-BR vs EN se mantém:** Em todos os modelos, o prompt em inglês gerou menos tokens e foi mais rápido. O Gemma foi a exceção (tempo similar), provavelmente porque seu tokenizador é mais equilibrado entre idiomas.
+- **Insight extra:** O Qwen 1.5B é o modelo mais eficiente para a RX 580 (melhor velocidade com menor VRAM). O Llama 3.2 1B, apesar de ter menos parâmetros, é mais lento e usa mais VRAM que o Qwen 1.5B — provando que arquitetura e tokenizador importam mais que o número de parâmetros.
 
 ## Como Executar
 
