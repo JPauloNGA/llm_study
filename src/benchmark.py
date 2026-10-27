@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
-MODELOS = ["qwen2.5:1.5b", "llama3.2:1b", "qwen2.5:3b"]
+MODELOS = ["qwen2.5:1.5b", "llama3.2:1b", "gemma2:2b", "qwen2.5:3b"]
 PROMPT_PT = "Explique em uma frase o que é computação de alta performance."
 PROMPT_EN = "Explain in one sentence what high-performance computing is."
 

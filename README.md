@@ -176,6 +176,23 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 - A base de conhecimento atual tem apenas 1 documento (microcontroladores). Para resultados robustos, seria necessário indexar mais documentos (motores, sensores, etc.).
 - A busca por similaridade de cosseno é simples; para bases maiores, seria necessário um banco vetorial dedicado (ex: ChromaDB, FAISS).
 
+### Experimento 11: Comparação Estendida de Modelos (Qwen 1.5B, Llama 1B, Gemma 2B, Qwen 3B)
+
+**Objetivo:** Comparar velocidade, uso de VRAM e eficiência de tokenização entre modelos de diferentes tamanhos e arquiteturas.
+
+| Modelo | Parâmetros | Velocidade (t/s) | VRAM (GB) | Tokens Prompt PT-BR | Tokens Prompt EN |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Qwen 2.5 1.5B** | 1.5B | **~39** | ~1.0 | 43 | 40 |
+| **Llama 3.2 1B** | 1B | ~22.5 | 1.41 | 39 | 36 |
+| **Gemma 2 2B** | 2B | ~28.4 | 1.80 | **23** | **20** |
+| **Qwen 2.5 3B** | 3B | ~29.2 | 2.01 | 43 | 40 |
+
+**Insights:**
+- **Arquitetura > Tamanho:** O Qwen 1.5B (~39 t/s) é quase 2x mais rápido que o Llama 1B (~22.5 t/s), apesar de ter mais parâmetros. Isso mostra que a arquitetura e a otimização do backend (llama.cpp) importam mais que o número de parâmetros.
+- **Gemma 2B é o "meio-termo" ideal:** ~28.4 t/s com apenas 1.8 GB de VRAM, quase empatando com o Qwen 3B (~29.2 t/s) mas usando menos memória.
+- **Tokenizador do Gemma é muito mais eficiente em PT-BR:** Apenas **23 tokens** para o prompt em português, contra 43 do Qwen. Isso significa que o Gemma "entende" português com menos tokens, reduzindo o custo computacional em cenários multilíngues.
+- **A diferença PT-BR vs EN se mantém:** Em todos os modelos, o prompt em inglês gerou menos tokens e foi mais rápido. O Gemma foi a exceção (tempo similar), provavelmente porque seu tokenizador é mais equilibrado entre idiomas.
+
 ## Como Executar
 
 ### Pré-requisitos
