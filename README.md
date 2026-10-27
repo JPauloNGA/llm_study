@@ -97,6 +97,39 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 
 **Limitações:** Com apenas 5 exemplos e 5 épocas, a melhoria é sutil. Para resultados robustos, seria necessário um dataset maior (50-100 exemplos) e mais épocas de treinamento.
 
+### Experimento 8: Roteador de Especialistas (Router)
+
+**Tese:** A inteligência pode emergir da composição de modelos especializados pequenos, em vez de um único modelo monolítico gigante.
+
+**Arquitetura:**
+1. **Classificador:** Qwen 2.5 1.5B (rápido, ~2.3s) lê a pergunta e decide a categoria.
+2. **Roteador:** Com base na categoria, chama o especialista certo via API do Ollama.
+3. **Especialistas:**
+   - `codigo` → Qwen 2.5 Coder 7B
+   - `mecatronica` → Jarvis (Qwen 1.5B com system prompt técnico)
+   - `visao` → Llava 7B
+   - `geral` → Qwen 2.5 3B (fallback)
+
+**Resultados (5 perguntas de teste):**
+
+| Pergunta | Categoria | Especialista | Tempo Classificação | Tempo Total | Velocidade |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Inverter lista em Python | codigo | qwen2.5-coder:7b | 2.94s | 12.22s | 14.73 t/s |
+| Servo motor vs motor de passo | mecatronica | jarvis | 2.33s | 7.41s | 38.92 t/s |
+| Sensor de efeito Hall | mecatronica | jarvis | 2.36s | 7.20s | 38.52 t/s |
+| Quem foi Alan Turing? | geral | qwen2.5:3b | 2.28s | 23.64s | 28.66 t/s |
+| Descreva a imagem | visao | llava:7b | 14.06s | 41.68s | 22.98 t/s |
+
+**Insights:**
+- O classificador acertou **100%** das categorias com o prompt corrigido.
+- O **Jarvis (1.5B especializado)** foi o especialista mais rápido (~7s total, 38.92 t/s), superando modelos maiores como o Coder 7B e o Llama 7B.
+- Modelos 7B (Coder e Llava) são lentos na RX 580 (8GB VRAM) porque o modelo precisa ser carregado/descarregado a cada chamada, adicionando overhead.
+- **Conclusão parcial:** A tese de composição de especialistas é viável, mas o hardware limita o tamanho dos especialistas. Modelos pequenos (1.5B) especializados são a melhor opção para a RX 580.
+
+**Limitações:**
+- O Llava 7B recusou a pergunta de visão porque nenhuma imagem foi enviada (comportamento esperado).
+- O tempo de classificação da pergunta de visão foi alto (14s) porque o Llava precisou ser carregado na VRAM pela primeira vez.
+
 ## Como Executar
 
 ### Pré-requisitos
