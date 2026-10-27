@@ -60,6 +60,20 @@ Todos os testes com warm-up (modelo já carregado na VRAM) para medir apenas o t
 
 **Ganho:** Aproximadamente **6x** de speedup apenas ao ativar a GPU via Vulkan.
 
+### Experimento 6: Teste de Qualidade (Jarvis 1.5B vs 3B)
+
+Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` baseado no Qwen 3B) com o mesmo system prompt de engenharia. Testamos a mesma pergunta técnica em ambos:
+
+**Pergunta:** "Explique a diferença entre um microcontrolador e um microprocessador."
+
+**Resposta do Jarvis 1.5B:**
+> Descreveu o microprocessador como tendo "memória e hardware de entrada/saída" integrados — **incorreto**. O microprocessador é apenas a CPU.
+
+**Resposta do Jarvis 3B:**
+> Acertou que o microprocessador é a CPU, mas afirmou que "o microprocessador contém um microcontrolador" — **inversão conceitual**. O correto é o contrário.
+
+**Insight:** Mesmo modelos maiores (3B) podem cometer erros conceituais em domínios técnicos específicos. O system prompt define o tom, mas **não corrige alucinações**. Isso justifica a necessidade de **fine-tuning com QLoRA** usando dados corretos e específicos do domínio.
+
 ## Como Executar
 
 ### Pré-requisitos
