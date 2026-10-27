@@ -130,6 +130,26 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 - O Llava 7B recusou a pergunta de visão porque nenhuma imagem foi enviada (comportamento esperado).
 - O tempo de classificação da pergunta de visão foi alto (14s) porque o Llava precisou ser carregado na VRAM pela primeira vez.
 
+### Experimento 9: Especialista vs. Generalista (Qualidade e Velocidade)
+
+**Tese:** Um modelo especialista pequeno supera um generalista maior em tarefas específicas.
+
+**Tarefa:** "Escreva uma função Python que receba uma lista de inteiros e retorne a soma dos quadrados dos números pares, usando list comprehension."
+
+| Modelo | Tempo Total | Tokens Gerados | Velocidade | Qualidade |
+| :--- | :--- | :--- | :--- | :--- |
+| **Especialista (Coder 7B)** | 19.70s | 255 | 15.08 t/s | Código idiomático, docstring completa, generator expression (eficiente em memória) |
+| **Generalista (Qwen 7B)** | 17.49s | 300 | 20.42 t/s | Código funcional, mas usa list comprehension dentro do `sum` (cria lista intermediária), sem docstring |
+
+**Insights:**
+- O generalista foi mais rápido (20.42 vs 15.08 t/s), mas gerou **mais tokens** (300 vs 255) e um código **menos eficiente** em memória.
+- O especialista gerou um código **mais idiomático e otimizado**, com docstring completa.
+- **Conclusão:** A velocidade bruta não é o único critério. O especialista entrega **mais qualidade por token gerado**, o que é crucial em sistemas de produção onde a qualidade da resposta importa mais que a velocidade bruta.
+
+**Limitações:**
+- Ambos são modelos 7B, então o custo de VRAM é similar. A vantagem do especialista está na qualidade, não no custo.
+- Para tarefas muito simples, o generalista pode ser suficiente. O especialista brilha em tarefas complexas que exigem conhecimento de domínio.
+
 ## Como Executar
 
 ### Pré-requisitos
