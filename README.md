@@ -1,45 +1,3 @@
-# Benchmark de LLMs Locais: Otimização e Eficiência em Hardware Limitado
-
-## Visão Geral
-
-Este projeto investiga o impacto de **técnicas de otimização de inferência** no desempenho de Large Language Models (LLMs) executados localmente em hardware de consumidor. O foco está em dois eixos principais:
-
-1. **Eficiência de Hardware:** Como diferentes backends de execução (CPU vs. GPU via Vulkan) afetam a velocidade de geração de tokens.
-2. **Eficiência de Tokenização:** Como o idioma do prompt (Português vs. Inglês) influencia o custo computacional e o tempo de resposta.
-
-O objetivo é demonstrar, com dados reais, que é possível rodar LLMs de forma eficiente em placas de vídeo antigas (como a AMD RX 580), contornando limitações de drivers e ecossistemas fechados.
-
-## Contexto e Motivação
-
-A maioria dos tutoriais de LLMs assume acesso a GPUs NVIDIA modernas com CUDA. No entanto, grande parte dos desenvolvedores e entusiastas possui hardware mais antigo ou de outras marcas.
-
-Este projeto nasceu da necessidade prática de responder: **"É possível rodar um LLM de forma útil em uma RX 580 de 8GB?"**
-
-A resposta é sim, mas o caminho não é o padrão. Este repositório documenta a jornada: desde a falha do PyTorch/CUDA, passando pela instabilidade do ROCm, até a solução estável com **Ollama + Vulkan**.
-
-## Decisões Técnicas
-
-### Por que Ollama + Vulkan?
-
-- **PyTorch/CUDA:** Inviável. CUDA é exclusivo para GPUs NVIDIA.
-- **ROCm:** O suporte oficial da AMD para placas Polaris (RX 580) foi descontinuado. Tentativas de usar `bitsandbytes` com ROCm no Windows resultaram em loops infinitos e instabilidade.
-- **Vulkan:** A API gráfica multiplataforma é suportada nativamente pela RX 580. O Ollama, utilizando o backend `llama.cpp`, consegue acessar a GPU via Vulkan de forma estável.
-
-**Resultado:** Salto de ~7 tokens/s (CPU) para **~40 tokens/s (GPU via Vulkan)**.
-
-### Por que comparar PT-BR vs Inglês?
-
-Modelos como o Qwen são treinados majoritariamente em inglês e chinês. A tokenização de textos em português tende a gerar mais tokens para expressar a mesma ideia, aumentando o custo (tempo e, em APIs pagas, dinheiro). O benchmark quantifica essa diferença.
-
-## Hardware Utilizado
-
-| Componente | Especificação |
-| :--- | :--- |
-| GPU | AMD Radeon RX 580 2048SP (8GB VRAM) |
-| Backend | Ollama + Vulkan (llama.cpp) |
-| Modelo | Qwen 2.5 1.5B (Q4_K_M) |
-| Sistema | Windows 10/11 |
-
 ## Resultados
 
 ### Experimento 1: PT-BR vs Inglês (Ollama + Vulkan)
@@ -49,17 +7,51 @@ Modelos como o Qwen são treinados majoritariamente em inglês e chinês. A toke
 
 | Métrica | PT-BR | EN | Diferença |
 | :--- | :--- | :--- | :--- |
-| Tokens do Prompt | 43 | 40 | **-7% no inglês** |
-| Tokens Gerados | 50 | 27 | **-46% no inglês** |
-| Tempo Total | 1.41s | 0.84s | **-40% no inglês** |
-| Velocidade | 40.35 t/s | 40.89 t/s | Praticamente igual |
+| Tokens do Prompt | 43 | 40 | -7% no inglês |
+| Tokens Gerados | 50 | 36 | -28% no inglês |
+| Tempo Total | 1.26s | 0.91s | **-28% no inglês** |
+| Velocidade | 39.60 t/s | 39.55 t/s | Praticamente igual |
 
 **Insights:**
-- O prompt em português consumiu **mais tokens de entrada** (43 vs 40), confirmando a ineficiência do tokenizador para o português.
-- O modelo gerou **quase o dobro de tokens** em português, indicando maior "verbosidade" ou dificuldade em encerrar o raciocínio.
-- O tempo total em inglês foi **40% menor**. Em cenários de alto volume, isso representa uma economia significativa.
+- O prompt em português consumiu mais tokens de entrada (43 vs 40).
+- O modelo gerou **28% menos tokens** em inglês para concluir a mesma tarefa.
+- O tempo total em inglês foi **28% menor**. Em cenários de alto volume, isso representa uma economia significativa.
 
-### Experimento 2: CPU vs GPU (Vulkan)
+### Experimento 2: Comparação de Modelos
+
+Todos os testes com warm-up (modelo já carregado na VRAM) para medir apenas o tempo de geração.
+
+| Modelo | Parâmetros | Velocidade PT-BR (t/s) | Velocidade EN (t/s) | Tokens Gerados PT-BR | Tokens Gerados EN |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Qwen 2.5 1.5B | 1.5B | **39.64** | **40.47** | 50 | 31 |
+| Qwen 2.5 3B | 3B | 29.02 | 29.17 | 36 | 27 |
+| Llama 3.2 1B | 1B | 22.11 | 22.45 | 50 | 38 |
+
+**Insights:**
+- O **Qwen 2.5 1.5B** apresentou o melhor equilíbrio entre velocidade e qualidade, sendo ~80% mais rápido que o Llama 3.2 1B, apesar de ter mais parâmetros.
+- O **tamanho do modelo não é o único fator de velocidade**: arquitetura e otimização do backend influenciam significativamente.
+- A velocidade de geração é praticamente idêntica entre PT-BR e EN para o mesmo modelo.
+
+### Experimento 3: KV Caching
+
+| Cenário | Tokens Prompt | Tokens Gerados | Tempo (s) | Velocidade (t/s) |
+| :--- | :--- | :--- | :--- | :--- |
+| Pergunta 1 (contexto longo) | 203 | 28 | 0.70 | 40.16 |
+| **Pergunta 2 (mesmo contexto, cache)** | **253** | **13** | **0.32** | **40.01** |
+| Pergunta isolada (sem cache) | 47 | 23 | 0.58 | 39.36 |
+
+**Insight:** A segunda pergunta no mesmo contexto levou **0.32s** — quase **metade do tempo** da pergunta isolada (0.58s), mesmo tendo um prompt **5x maior** (253 vs 47 tokens). Isso prova que o KV Caching reaproveita os cálculos do contexto anterior.
+
+### Experimento 4: Quantização (Q4 vs Q8)
+
+| Quantização | Tamanho | Tokens Gerados | Tempo (s) | Velocidade (t/s) |
+| :--- | :--- | :--- | :--- | :--- |
+| Q4_K_M (4-bit) | ~986 MB | 50 | 1.26 | **39.79** |
+| Q8_0 (8-bit) | ~1.6 GB | 50 | 1.37 | 36.37 |
+
+**Insight:** O Q4 é **~9% mais rápido** que o Q8 e ocupa **quase metade do espaço em disco/VRAM**. Para hardware limitado como a RX 580, o Q4 é a escolha ideal.
+
+### Experimento 5: CPU vs GPU (Vulkan)
 
 | Configuração | Velocidade (tokens/s) |
 | :--- | :--- |
@@ -67,21 +59,6 @@ Modelos como o Qwen são treinados majoritariamente em inglês e chinês. A toke
 | GPU (Vulkan) | **~40** |
 
 **Ganho:** Aproximadamente **6x** de speedup apenas ao ativar a GPU via Vulkan.
-
-### Experimento 3: Comparação de Modelos (Qwen 1.5B, Qwen 3B, Llama 3.2 1B)
-
-Todos os testes foram executados com warm-up (modelo já carregado na VRAM) para medir apenas o tempo de geração.
-
-| Modelo | Parâmetros | Velocidade PT-BR (t/s) | Velocidade EN (t/s) | Tokens Gerados PT-BR | Tokens Gerados EN |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| Qwen 2.5 1.5B | 1.5B | **39.46** | **39.74** | 50 | 32 |
-| Qwen 2.5 3B | 3B | 29.28 | 29.45 | 29 | 24 |
-| Llama 3.2 1B | 1B | 22.44 | 22.60 | 50 | 46 |
-
-**Insights:**
-- O **Qwen 2.5 1.5B** apresentou o melhor equilíbrio entre velocidade e qualidade, sendo ~75% mais rápido que o Llama 3.2 1B, apesar de ter mais parâmetros.
-- O **tamanho do modelo não é o único fator de velocidade**: arquitetura e otimização do backend influenciam significativamente.
-- A velocidade de geração (tokens/s) é **praticamente idêntica entre PT-BR e EN** para o mesmo modelo. A diferença de custo entre idiomas está na **quantidade de tokens gerados**, não na velocidade.
 
 ## Como Executar
 
