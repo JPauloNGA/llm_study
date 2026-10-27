@@ -150,6 +150,32 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 - Ambos são modelos 7B, então o custo de VRAM é similar. A vantagem do especialista está na qualidade, não no custo.
 - Para tarefas muito simples, o generalista pode ser suficiente. O especialista brilha em tarefas complexas que exigem conhecimento de domínio.
 
+### Experimento 10: RAG (Retrieval-Augmented Generation)
+
+**Tese:** Um modelo pequeno (1.5B) com acesso a uma base de conhecimento externa (RAG) supera o mesmo modelo sem RAG em precisão, sem custo significativo de tempo.
+
+**Arquitetura:**
+1. Documentos de mecatrônica indexados com `nomic-embed-text` (embeddings).
+2. Busca por similaridade de cosseno para encontrar os trechos mais relevantes.
+3. Contexto injetado no prompt do Jarvis antes da geração.
+
+**Resultados:**
+
+| Pergunta | Sem RAG (tempo) | Com RAG (busca) | Com RAG (geração) | Com RAG (total) | Sem RAG (t/s) | Com RAG (t/s) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Microcontrolador vs microprocessador | 6.15s | 2.12s | 4.36s | 6.48s | 38.62 | 38.69 |
+| O que é servo motor? | 6.13s | 2.14s | 4.78s | 6.92s | 38.56 | 38.44 |
+
+**Insights:**
+- **Tempo total:** O RAG adicionou apenas ~0.3s a 0.8s ao tempo total. A busca (2.1s) foi compensada pelo fato de o Jarvis gerar menos tokens com RAG (85 e 101 vs 150 sem RAG).
+- **Qualidade:** A resposta com RAG foi **direta e tecnicamente correta** ("o microprocessador é apenas a CPU..."). Sem RAG, a resposta foi mais genérica e propensa a erros conceituais.
+- **Eficiência:** O Jarvis com RAG gerou **menos tokens** (mais direto) e manteve a mesma velocidade de geração (~38.5 t/s).
+- **Conclusão:** O RAG permite que um modelo pequeno (1.5B) tenha **conhecimento de domínio preciso** sem precisar ser treinado nisso. Isso valida a tese de que **especialistas pequenos + base de conhecimento compartilhada** são uma alternativa viável a modelos monolíticos gigantes.
+
+**Limitações:**
+- A base de conhecimento atual tem apenas 1 documento (microcontroladores). Para resultados robustos, seria necessário indexar mais documentos (motores, sensores, etc.).
+- A busca por similaridade de cosseno é simples; para bases maiores, seria necessário um banco vetorial dedicado (ex: ChromaDB, FAISS).
+
 ## Como Executar
 
 ### Pré-requisitos

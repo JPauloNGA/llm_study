@@ -1,0 +1,5 @@
+Um microcontrolador é um circuito integrado que contém um processador (CPU), memória RAM, memória ROM (ou flash) e periféricos de entrada/saída (I/O) em um único chip. Ele é projetado para executar tarefas específicas de controle e automação, como ler sensores, acionar motores e controlar displays.
+
+A principal diferença entre um microcontrolador e um microprocessador é que o microprocessador é apenas a CPU, sem memória ou periféricos integrados. Ele precisa de chips externos para funcionar. Já o microcontrolador é um sistema completo em um único chip, o que o torna ideal para aplicações embarcadas de baixo custo e baixo consumo de energia.
+
+Exemplos de microcontroladores: Arduino (ATmega328P), ESP32, STM32.
