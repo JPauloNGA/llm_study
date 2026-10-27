@@ -76,18 +76,26 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 
 ### Experimento 7: Fine-Tuning com QLoRA (Jarvis LoRA)
 
-**Processo:**
-1. Treinamento do adaptador LoRA no Google Colab (GPU T4) com dataset de 5 exemplos de mecatrônica.
+**Objetivo:** Criar um assistente especializado em mecatrônica usando fine-tuning eficiente (QLoRA) em hardware limitado.
+
+**Pipeline:**
+1. Treinamento do adaptador LoRA no Google Colab (GPU T4 gratuita) com dataset de 5 exemplos de mecatrônica.
 2. Merge do adaptador no modelo base Qwen 2.5 1.5B (f16).
 3. Conversão para GGUF via `llama.cpp`.
-4. Importação no Ollama como `jarvis-lora`.
+4. Importação no Ollama como `jarvis-lora` (3.1 GB).
 
-**Desafios encontrados:**
-- Incompatibilidade do `bitsandbytes` com a RX 580 (resolvido usando Colab).
-- Conflito de `torchao` no Colab (resolvido removendo a biblioteca).
-- Tokenizador do Qwen não é compatível com o script padrão do `llama.cpp` (resolvido baixando o tokenizador original do Hugging Face).
+**Desafios encontrados e soluções:**
+| Desafio | Solução |
+| :--- | :--- |
+| `bitsandbytes` não funciona na RX 580 | Treinamento realizado no Colab (GPU T4) |
+| Erro de `bf16` no GradScaler da T4 | Conversão dos parâmetros treináveis para `float32` após criar o `SFTTrainer` |
+| Conflito de versão do `torchao` no Colab | Remoção da biblioteca (`pip uninstall torchao`) |
+| Tokenizador do Qwen incompatível com `convert_hf_to_gguf.py` | Download do `tokenizer.json` e `tokenizer_config.json` originais do Hugging Face |
+| `ADAPTER` removido do Ollama (v0.34.1+) | Merge do adaptador no modelo base antes da conversão para GGUF |
 
-**Resultado:** Pipeline completo de fine-tuning validado, desde o treinamento até a inferência local.
+**Resultado:** Pipeline completo de fine-tuning validado, desde o treinamento até a inferência local. O modelo fine-tunado apresentou mudança no padrão de resposta em comparação ao modelo base, confirmando que o adaptador teve efeito.
+
+**Limitações:** Com apenas 5 exemplos e 5 épocas, a melhoria é sutil. Para resultados robustos, seria necessário um dataset maior (50-100 exemplos) e mais épocas de treinamento.
 
 ## Como Executar
 
