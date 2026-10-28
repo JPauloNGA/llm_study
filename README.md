@@ -234,9 +234,13 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
    pip install -r requirements.txt
    ```
 
-4. Baixe o modelo no Ollama:
+4. Baixe os modelos no Ollama:
    ```bash
    ollama pull qwen2.5:1.5b
+   ollama pull llama3.2:1b
+   ollama pull gemma2:2b
+   ollama pull qwen2.5:3b
+   ollama pull nomic-embed-text
    ```
 
 5. (Opcional) Ative o Vulkan para GPUs AMD antigas:
@@ -245,17 +249,25 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
    # Reinicie o Ollama
    ```
 
-6. Execute o benchmark:
+6. Execute os benchmarks (cada script é independente):
    ```bash
-   python src/benchmark.py
+   python src/benchmark.py               # Experimentos 1-4 (idiomas, modelos, KV cache, quantização)
+   python src/benchmark_modelos_v2.py    # Experimento 11 (Qwen, Llama, Gemma, Qwen 3B)
+   python src/benchmark_quantizacao.py   # Experimento 12 (Q4 vs Q8)
+   python src/benchmark_especialistas.py # Experimento 9 (especialista vs generalista)
+   python src/router.py                  # Experimento 8 (roteador de especialistas)
+   python src/rag_index.py               # Experimento 10 (indexação de documentos)
+   python src/rag_query.py               # Experimento 10 (consulta com RAG)
    ```
 
 ## Próximos Passos (Roadmap)
 
 - [✓] Testar outros modelos (Llama 3.2 1B, Gemma 2 2B)
 - [✓] Comparar diferentes níveis de quantização (Q4, Q8)
-- [ ] Medir uso real de VRAM com ferramentas do sistema
-- [ ] Adicionar teste de qualidade (perplexidade) para validar se a quantização degrada a resposta
+- [✓] Medir uso real de VRAM com ferramentas do sistema
+- [☓] Adicionar teste de qualidade (perplexidade) para validar se a quantização degrada a resposta
+
+**Nota:** O teste de perplexidade foi planejado, mas não executado nesta versão do projeto. A análise qualitativa (Experimento 9) já fornece evidências de que a qualidade da resposta não é linearmente proporcional ao número de bits da quantização.
 
 ## Tecnologias
 
