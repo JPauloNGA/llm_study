@@ -1,3 +1,5 @@
+> **Este repositório é um satélite do [llm-hardware-envelope](https://github.com/JPauloNGA/llm-hardware-envelope)**, que contém o estudo principal sobre o envelope de hardware. Aqui ficam os experimentos complementares de escolha de modelo, quantização e idioma.
+
 ## Resultados
 
 ### Experimento 1: PT-BR vs Inglês (Ollama + Vulkan)
@@ -275,7 +277,3 @@ Criamos dois modelos customizados (`jarvis` baseado no Qwen 1.5B e `jarvis-3b` b
 - [llama.cpp](https://github.com/ggerganov/llama.cpp) - Engine de inferência (backend do Ollama)
 - [Vulkan](https://www.vulkan.org/) - API gráfica
 - Python, Pandas, Matplotlib
-
-## Licença
-
-MIT
