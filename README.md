@@ -1,4 +1,5 @@
 > **Este repositório é um satélite do [llm-hardware-envelope](https://github.com/JPauloNGA/llm-hardware-envelope)**, que contém o estudo principal sobre o envelope de hardware. Aqui ficam os experimentos complementares de escolha de modelo, quantização e idioma.
+> **A tese consolidada está em [`small-model-orchestration`](https://github.com/JPauloNGA/small-model-orchestration)**: como orquestrar modelos pequenos para capacidade de agente.
 
 ## Resultados
 
